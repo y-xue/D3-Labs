@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Learning D3</title>
+        <script src="http://d3js.org/d3.v4.js"></script>
+        <script src="https://d3js.org/d3-selection-multi.v1.min.js"></script>
+        <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+        <script src="https://d3js.org/d3-color.v1.min.js"></script>
+        <style type="text/css"></style>
+    </head>
+    <body>
+        <script>
+            // configuration code
+            var outerWidth = 300;
+            var outerHeight = 300;
+
+            var margin = { left: 30, top: 30, right: 30, bottom: 30 };
+
+            var innerWidth = outerWidth - margin.left - margin.right;
+            var innerHeight = outerHeight - margin.top - margin.bottom;
+            
+            var rMin = 5;
+            var rMax = 20;
+
+            var xColumn = "P1";
+            var yColumn = "P2";
+            var rColumn = "P3";
+            var colorColumn = "P4";
+
+            // visualization code
+            var svg = d3.select("body")
+                        .append("svg")
+                        .attr("width", outerWidth)
+                        .attr("height", outerHeight);
+
+            var g = svg.append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            var svg1 = d3.select("body")
+                        .append("svg")
+                        .attr("width", outerWidth)
+                        .attr("height", outerHeight)
+                        .attr("transform", "translate(" + 350 + "," + 0 + ")");
+
+            var xScale = d3.scaleLinear().range([0,innerWidth]);
+            var yScale = d3.scaleLinear().range([innerHeight,0]);
+            var rScale = d3.scaleLinear().range([rMin,rMax]);
+            // var OrdinalColorScale = d3.scaleOrdinal().range(d3.schemeCategory10);
+            // var OrdinalColorScale = d3.scaleOrdinal().range(d3.schemeBrBG[5]);
+            var SeqColorScale = d3.scaleSequential().interpolator(d3.interpolateGreens);
+            // var SeqColorScale = d3.scaleSequential().interpolator(d3.interpolateGreens);
+
+            var i = d3.interpolateNumber(10, 20);
+            console.log(i);
+            console.log(i(0.0)); // 10
+            console.log(i(0.2)); // 12
+            console.log(i(0.5)); // 15
+            console.log(i(1.0)); // 20
+
+            var interpolator = d3.interpolateRgb("purple", "orange");
+
+            console.log(interpolator);
+            console.log(interpolator(0));
+            console.log(interpolator(0.5));
+            console.log(interpolator(1));
+
+            function appendCircle(cx, cy, color) {
+                svg1.append('circle')
+                    .attr("cx", cx)
+                    .attr("cy", cy)
+                    .attr("r", 10)
+                    .attr("fill", color);
+            }
+
+            appendCircle(10,10,interpolator(0));
+            appendCircle(10,60,interpolator(0.5));
+            appendCircle(10,110,interpolator(1));
+
+            var blues = d3.schemeBlues[9];
+            console.log(blues);
+            console.log(blues[3]);
+            appendCircle(10,200,blues[3]);
+
+            var iblues = d3.interpolateBlues;
+            appendCircle(10,250,iblues(0.7));
+
+            console.log("scales")
+            var blueSeqScale = d3.scaleSequential().interpolator(iblues); // default domain [0,1]
+            appendCircle(10,280,blueSeqScale(0.7));
+
+            blueSeqScale.domain([100,200]);
+            appendCircle(50,280,blueSeqScale(170));
+
+            var blueScale = d3.scaleOrdinal(d3.schemeBlues[9]);
+            console.log(blueScale);
+
+            d3.csv("data.csv", function(error, data) {
+                if (error) throw error;
+
+                data.forEach(function(d) {
+                    d.P1 = +d.P1;
+                    d.P2 = +d.P2;
+                    d.P3 = +d.P3;
+                    d.P4 = +d.P4;
+                });
+
+                xScale.domain(d3.extent(data, function (d) { return d[xColumn]; }));
+                yScale.domain(d3.extent(data, function (d) { return d[yColumn]; }));
+                rScale.domain(d3.extent(data, function (d) { return d[rColumn]; }));
+                
+                var circles = g.selectAll('circle').data(data).enter().append('circle');
+                
+                // console.log(data.map(function (d) { return d[rColumn]; }));
+                SeqColorScale.domain(d3.extent(data, function (d) { return d[rColumn]; }));
+                // OrdinalColorScale.domain(data.map(function (d) { return d[rColumn]; })); // for
+
+                // console.log(colorScale);
+
+                circles
+                    .attr("cx", function (d) { return xScale(d[xColumn]); })
+                    .attr("cy", function (d) { return yScale(d[yColumn]); })
+                    .attr("r", function (d) { return rScale(d[rColumn]); })
+                    // .attr("fill", function (d) { return OrdinalColorScale(d[rColumn]); });
+                    .attr("fill", function (d) { return SeqColorScale(d[rColumn]); });
+
+                // console.log(data);
+                // console.log(data[colorColumn]);
+
+            })
+
+
+        </script>
+    </body>
+</html>

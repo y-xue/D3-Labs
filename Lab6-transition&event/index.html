@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+        <title>learning</title>
+        <script type="text/javascript" src="https://d3js.org/d3.v4.min.js"></script>
+
+        <style type="text/css">
+            /* No style rules here yet */       
+        </style>
+</head>
+<body>
+    <div>
+    <input name="alterButton" 
+           type="button" 
+           value="Click Me." 
+           onclick="updateData()" />
+    </div>
+
+    <script>
+        // configuration code
+        var outerWidth = 300;
+        var outerHeight = 300;
+
+        var margin = { left: 30, top: 30, right: 30, bottom: 30 };
+
+        var innerWidth = outerWidth - margin.left - margin.right;
+        var innerHeight = outerHeight - margin.top - margin.bottom;
+        
+        // visualization code
+        var svg = d3.select("body")
+                    .append("svg")
+                    .attr("width", outerWidth)
+                    .attr("height", outerHeight)
+                    .attr("class", "bubble");
+
+        var g = svg.append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+            .on("mouseleave", function() { return resetBubbles(); });
+        
+        var color = d3.scaleOrdinal(d3.schemeCategory20);
+
+        d3.csv("price.csv", function(error, data) {
+            if (error) throw error;
+
+            data.forEach(function(d) {
+                d.Price = +d.Price;
+            });
+
+            // create a new pack layout
+            var bubble = d3.pack(data)
+                .size([innerWidth, innerHeight])
+                .padding(1);
+
+            // Constructs a root node from hierarchical data
+            var nodes = d3.hierarchy({"children": data})
+                .sum(function(d) { return d.Price; });
+                // You must call node.sum or node.count 
+                // before invoking a hierarchical layout 
+                // that requires node.value
+
+            var leaf = g.selectAll(".leaf")
+                .data(bubble(nodes).leaves())
+                .enter()
+                .append("g")
+                .attr("class", "leaf")
+                .attr("transform", function(d) {
+                    return "translate(" + d.x + "," + d.y + ")";
+                });
+
+            // The circles are positioned according to 
+            // the front-chain packing algorithm by Wang et al
+            leaf.append("circle")
+                .attr("class", "circle")
+                .attr("r", function(d) {
+                    // If the radius accessor function is not specified, 
+                    // the radius of each leaf circle is computed from leaf_node.value,
+                    // and then scaled to fit the layout size.
+                    return d.r;
+                })
+                .style("fill", function(d,i) {
+                    return color(i);
+                })
+                .on("mouseover", function(d,i) {
+                    return changeBubbleSize(d,i);
+                });
+
+            leaf.append("text")
+                .attr("class", "titleText")
+                .text(function(d) { return d.data.Month; })
+                .attr("font-size", function(d){ return d.r/3; })
+                .style("text-anchor", "middle");
+
+            leaf.append("text")
+                .attr("class", "valueText")
+                .attr("dy", 10)
+                .text(function(d) { return d.data.Price; })
+                .attr("font-size", function(d){ return d.r/3; })
+                .style("text-anchor", "middle");
+
+        });
+
+        function updateData() {
+            d3.csv("new_price.csv", function(error, data) {
+                if (error) throw error;
+
+                data.forEach(function(d) {
+                    d.Price = +d.Price;
+                });
+
+                var t = g.transition().duration(700);
+
+                t.selectAll(".valueText")
+                    .text(function(d,i) { return data[i].Price; })
+            });
+        }
+
+        function changeBubbleSize(d,i) {
+
+            var t = g.transition().duration(700);
+
+            t.selectAll(".circle")
+                .attr("r", function(d,ii) {
+                    if (ii == i) {
+                        return 2*d.r;
+                    } else {
+                        return d.r;
+                    }
+                });
+
+            t.selectAll(".titleText")
+                .attr("font-size", function(d,ii) { 
+                    if (ii == i) { 
+                        return 2*d.r/3; 
+                    } else {
+                        return d.r/3;
+                    }
+                });
+
+            t.selectAll(".valueText")
+                .attr("dy", function(d,ii) {
+                    if (ii == i) {
+                        return 20;
+                    } else {
+                        return 10;
+                    }
+                })
+                .attr("font-size", function(d,ii) { 
+                    if (ii == i) { 
+                        return 2*d.r/3; 
+                    } else {
+                        return d.r/3;
+                    }
+                });
+        }
+
+        function resetBubbles() {
+            var t = g.transition().duration(700);
+
+            t.selectAll(".circle")
+                .attr("r", function(d,ii) {
+                    return d.r;
+                });
+
+            t.selectAll(".valueText")
+                .attr("dy",10)
+                .attr("font-size", function(d,ii) { 
+                    return d.r/3;
+                });
+
+            t.selectAll(".titleText")
+                .attr("font-size", function(d,ii) { 
+                    return d.r/3;
+                });
+        }
+
+    </script>
+</body>
+</html>

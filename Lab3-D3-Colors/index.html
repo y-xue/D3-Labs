@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Learning D3</title>
+        <script src="http://d3js.org/d3.v4.js"></script>
+        <script src="https://d3js.org/d3-selection-multi.v1.min.js"></script>
+        <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+        <script src="https://d3js.org/d3-color.v1.min.js"></script>
+        <style type="text/css"></style>
+    </head>
+    <body>
+        <script>
+            // configuration code
+            var outerWidth = 300;
+            var outerHeight = 300;
+
+            var margin = { left: 30, top: 30, right: 30, bottom: 30 };
+
+            var innerWidth = outerWidth - margin.left - margin.right;
+            var innerHeight = outerHeight - margin.top - margin.bottom;
+            
+            var rMin = 5;
+            var rMax = 20;
+
+            var xColumn = "P1";
+            var yColumn = "P2";
+            var rColumn = "P3";
+            var colorColumn = "P4";
+
+            // visualization code
+            var svg = d3.select("body")
+                        .append("svg")
+                        .attr("width", outerWidth)
+                        .attr("height", outerHeight);
+
+            var g = svg.append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            var xScale = d3.scaleLinear().range([0,innerWidth]);
+            var yScale = d3.scaleLinear().range([innerHeight,0]);
+            var rScale = d3.scaleLinear().range([rMin,rMax]);
+            
+            d3.csv("data.csv", function(error, data) {
+                if (error) throw error;
+
+                data.forEach(function(d) {
+                    d.P1 = +d.P1;
+                    d.P2 = +d.P2;
+                    d.P3 = +d.P3;
+                    d.P4 = +d.P4;
+                });
+
+                xScale.domain(d3.extent(data, function (d) { return d[xColumn]; }));
+                yScale.domain(d3.extent(data, function (d) { return d[yColumn]; }));
+                rScale.domain(d3.extent(data, function (d) { return d[rColumn]; }));
+                
+                var circles = g.selectAll('circle').data(data).enter().append('circle');
+                
+                circles
+                    .attr("cx", function (d) { return xScale(d[xColumn]); })
+                    .attr("cy", function (d) { return yScale(d[yColumn]); })
+                    .attr("r", function (d) { return rScale(d[rColumn]); });
+            })
+
+
+        </script>
+    </body>
+</html>

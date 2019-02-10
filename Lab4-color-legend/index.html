@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Learning D3</title>
+        <script src="http://d3js.org/d3.v4.js"></script>
+        <script src="https://d3js.org/d3-selection-multi.v1.min.js"></script>
+        <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+        <script src="https://d3js.org/d3-color.v1.min.js"></script>
+        <style type="text/css"></style>
+    </head>
+    <body>
+        <script>
+            // configuration code
+            var outerWidth = 330;
+            var outerHeight = 250;
+
+            var margin = { left: 30, top: 30, right: 100, bottom: 30 };
+
+            var innerWidth = outerWidth - margin.left - margin.right;
+            var innerHeight = outerHeight - margin.top - margin.bottom;
+            
+            var rMin = 5;
+            var rMax = 20;
+
+            var legendPos = {
+                x: outerWidth - margin.right / 2,
+                y: 0,
+                width: 10,
+                height: 20
+            };
+
+            var xColumn = "P1";
+            var yColumn = "P2";
+            var rColumn = "P3";
+            var colorColumn = rColumn;
+
+            // visualization code
+            var svg1 = d3.select("body")
+                        .append("svg")
+                        .attr("width", outerWidth)
+                        .attr("height", outerHeight);
+
+            var g1 = svg1.append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            var svg2 = d3.select("body")
+                        .append("svg")
+                        .attr("width", outerWidth)
+                        .attr("height", outerHeight);
+
+            var g2 = svg2.append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            var xScale = d3.scaleLinear().range([0,innerWidth]);
+            var yScale = d3.scaleLinear().range([innerHeight,0]);
+            var rScale = d3.scaleLinear().range([rMin,rMax]);
+            
+            d3.csv("data.csv", function(error, data) {
+                if (error) throw error;
+
+                data.forEach(function(d) {
+                    d.P1 = +d.P1;
+                    d.P2 = +d.P2;
+                    d.P3 = +d.P3;
+                    d.P4 = +d.P4;
+                });
+
+                // console.log(data);
+
+                // data.sort(function(a,b) { return a[rColumn] - b[rColumn]; });
+
+                // console.log(data);
+
+                xScale.domain(d3.extent(data, function (d) { return d[xColumn]; }));
+                yScale.domain(d3.extent(data, function (d) { return d[yColumn]; }));
+                rScale.domain(d3.extent(data, function (d) { return d[rColumn]; }));
+                
+
+                /*
+                First example:
+                    Color legend for categorical color scheme.
+                */
+                var colorScale1 = d3.scaleOrdinal(d3.schemePaired);
+                // colorScale1.domain(d3.extent(data, function (d) { return d[colorColumn]; }));
+                
+                var circles1 = g1.selectAll('circle').data(data).enter().append('circle');
+
+                circles1
+                    .attr("cx", function (d) { return xScale(d[xColumn]); })
+                    .attr("cy", function (d) { return yScale(d[yColumn]); })
+                    .attr("r", function (d) { return rScale(d[rColumn]); })
+                    .attr("fill", function (d) { return colorScale1(d[colorColumn]); });
+
+                // Remove duplicates in legend
+                // 
+                // var colorColumnVals = data.map(function(row) { return row[colorColumn];});
+                var colorColumnVals = d3.map(data, function(d) { return d[colorColumn];}).keys();
+                // console.log(colorColumnVals.keys());
+
+                // console.log(d3.set(colorColumnVals).values());
+                
+                // function unique(value, index, self) { 
+                //     return self.indexOf(value) === index;
+                // }
+                
+                // var colorColumnVals = colorColumnVals.filter(unique);
+                
+                // console.log(colorColumnVals);
+
+                var colorLegend1 = svg1.selectAll(".legend")
+                    // .data(data)
+                    .data(colorColumnVals) // remove duplicates in legend
+                    .enter()
+                    .append("g")
+                    .attr("class", "legend")
+                    .attr("transform", function(d, i) { return "translate(" + legendPos.x + "," + i * legendPos.height + ")"; });
+
+                colorLegend1.append("rect")
+                    .attr("width",  legendPos.width)
+                    .attr("height", legendPos.height)
+                    // .style("fill", function(d) { return colorScale1(d[colorColumn]); });
+                    .style("fill", colorScale1); // remove duplicates in legend
+
+                colorLegend1.append("text")
+                    .attr("x", 15)
+                    .attr("y", 15)
+                    .style('font-size', 6)
+                    // .text(function(d) { return d[colorColumn]; });
+                    .text(function(d) { return d; }); // remove duplicates in legend
+
+
+                /*
+                Second example:
+                    Color legend for sequential color scheme.
+                */
+
+                var color = d3.scaleSequential(d3.interpolateOranges);
+                
+                var colorScale2 = d3.scaleQuantize().range([0,0.2,0.4,0.6,0.8,1]);
+                colorScale2.domain(d3.extent(data, function (d) { return d[colorColumn]; }));
+
+                var circles2 = g2.selectAll('circle').data(data).enter().append('circle');
+
+                circles2
+                    .attr("cx", function (d) { return xScale(d[xColumn]); })
+                    .attr("cy", function (d) { return yScale(d[yColumn]); })
+                    .attr("r", function (d) { return rScale(d[rColumn]); })
+                    .attr("fill", function (d) { return color(colorScale2(d[colorColumn])); });
+
+                var colorLegend2 = svg2.selectAll(".legend")
+                    .data(colorScale2.range())
+                    .enter()
+                    .append("g")
+                    .attr("class", "legend")
+                    .attr("transform", function(d, i) { return "translate(" + legendPos.x + "," + i * legendPos.height + ")"; });
+
+                colorLegend2.append("rect")
+                    .attr("width",  legendPos.width)
+                    .attr("height", legendPos.height)
+                    .style("fill", function(d) { return color(d); });
+
+                // colorLegend2.append("text")
+                //     .attr("x", 15)
+                //     .attr("y", 15)
+                //     .style('font-size', 6)
+                //     .text(function(d, i) {return d;});
+
+                var formatDecimal = d3.format('.1f');
+
+                function getVal(rangeValue) {
+                    return formatDecimal(colorScale2.invertExtent(rangeValue)[1]);
+                }
+
+                // console.log(colorScale2.invertExtent(0));
+                // console.log(colorScale2.invertExtent(1));
+
+                colorLegend2.append("text")
+                    .attr("x", 15)
+                    .attr("y", 20)
+                    .style('font-size', 6)
+                    .text(function(d, i) { return getVal(d); });
+
+            });
+
+        </script>
+    </body>
+</html> 
